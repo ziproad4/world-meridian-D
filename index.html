@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>월드 메르디앙</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- ▼ 폼 동작을 위한 추가 (flatpickr + 스타일) -->
+  <link rel="preconnect" href="https://solapi-backend.onrender.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
+
+  <!-- ✅ OG/Twitter -->
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="월드 메르디앙">
+  <meta property="og:title" content="월드 메르디앙 | 방문예약">
+  <meta property="og:description" content="방문예약하고 분양 혜택을 지금 확인하세요!">
+  <meta property="og:url" content="https://https://songdo-meridian.vercel.app/.vercel.app/">
+  <meta property="og:image" content="https://https://songdo-meridian.vercel.app/.vercel.app/img/sam.jpg">
+  <link rel="preload" as="image" href="/img/sam.jpg">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="월드 메르디앙">
+  <meta name="twitter:description" content="방문예약하고 혜택을 지금 확인하세요!">
+  
+  <style>
+    /* ==== 방문예약 폼 전용 스타일 ==== */
+    .visit-form {
+      width:100%;max-width:500px;margin:0 auto;padding:30px 20px;
+      font-family:'Noto Sans KR',sans-serif;color:#333;box-sizing:border-box;
+      background:#f7fbfb;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.06)
+    }
+    .form-group{margin-bottom:25px}
+    .visit-form label{display:block;font-weight:600;margin-bottom:4px;font-size:15px;text-align:left}
+    .required{color:red;margin-left:3px}
+    .sub-info{font-size:12px;color:#777;margin-bottom:5px;text-align:left}
+    .input-row{display:flex;gap:10px;flex-wrap:wrap}
+    .input-row input,
+    .visit-form input[type="text"],
+    .visit-form input[type="tel"],
+    .visit-form select{
+      flex:1;min-width:0;padding:10px;font-size:14px;border:1px solid #ccc;
+      border-radius:4px;box-sizing:border-box;text-align:left;width:100%;background:#fff
+    }
+
+    /* 버튼 */
+    .visit-form button{
+      width:100%;padding:12px;background:#2c8b83;color:#fff;font-size:16px;border:none;
+      border-radius:30px;cursor:pointer;margin-top:10px;transition:transform .02s ease,opacity .2s ease,background-color .2s ease
+    }
+    .visit-form button:hover{background:#2c5f59}
+    .visit-form button:disabled{opacity:.5;cursor:not-allowed}
+
+    /* 개인정보 수집·이용 동의서 */
+    details.privacy-accordion{border:1px solid #e3e8eb;border-radius:10px;background:#fdfdfd;padding:8px 10px;margin-top:8px}
+    details.privacy-accordion>summary{list-style:none;cursor:pointer;font-weight:800;font-size:13px;color:#2c5f59;display:flex;align-items:center;gap:6px}
+    details.privacy-accordion>summary::-webkit-details-marker{display:none}
+    details.privacy-accordion>summary::before{content:"▶";font-size:11px;transform:translateY(-1px);opacity:.8}
+    details.privacy-accordion[open]>summary::before{content:"▼"}
+.privacy-content {white-space: pre-line; text-align: left;word-break: break-all;line-height: 1.6;font-size: 12px;color: #424b55;margin-top: 10px;max-height: 150px; overflow: auto; padding: 8px; border-top: 1px dashed #e6ecf0;}
+    .checkbox-inline{position:relative;top:21px;display:inline-block;margin-bottom:16px}
+    .checkbox-inline input{position:absolute;bottom:-6px}
+    .checkbox-inline span{position:absolute;bottom:-4px;left:23px;right:0;font-size:12px}
+
+    /* ==== 시간 슬롯 드롭다운 ==== */
+    .time-wrap{position:relative;flex:1;min-width:0}
+    .time-display{
+      cursor:pointer;background:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%232c8b83' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/></svg>")
+        no-repeat 10px 50%/18px 18px;padding-left:36px
+    }
+    .time-dropdown{
+      position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:20;background:#fff;border:1px solid #e5e7eb;border-radius:8px;
+      box-shadow:0 10px 24px rgba(0,0,0,.08);max-height:280px;overflow:auto;display:none
+    }
+    .time-dropdown.open{display:block}
+    .slot-sec{padding:8px 10px;border-bottom:1px solid #f1f5f9}
+    .slot-sec h4{margin:6px 2px 8px;font-size:13px;color:#2563eb}
+    .slot{padding:10px 14px;border-radius:6px;cursor:pointer;font-size:14px}
+    .slot:hover,.slot:focus{background:#f1f5f9;outline:none}
+    .slot[aria-selected="true"]{background:#e8f2ff}
+  </style>
+  <!-- ▲ 폼 추가 끝 -->
+</head>
+<body>
+  <div class="page">
+    <div class="container">
+      <!-- 좌측 카드(고정) -->
+      <aside class="left">
+        <div class="card" 0>
+          <div class="card-top">
+            <div class="cover"></div>
+            <!-- 원형 로고 영역 (이미지 교체: img/logo.png) -->
+            <div class="avatar">
+              <img src="img/logo.png" alt="로고" class="logo-img">
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="site-name">월드 메르디앙</div>
+            <div class="manager">
+              <span class="manager-name">신동국</span>
+              <span class="manager-title">과장</span>
+            </div>
+
+            <p class="lead">송도 신도시 즉시 입주 가능한 아파트 <br> 학세권·학원가를 품은 학품아</p>
+
+            <!-- 전화번호: 텍스트는 고정색, 배경 네모에 애니메이션 효과 -->
+            <a class="phone-cta" href="tel:010-4359-7772" title="전화 걸기" data-reveal>
+              <span class="phone-text">010-4359-7772</span>
+            </a>
+
+            <div class="info">
+              <div class="row"><span class="label">현장</span><span class="value">인천 연수구 송도동 21-16번지 일원</span></div>
+              <div class="row"><span class="label">규모</span><span class="value">지하 2층 ~ 지상 10층</span></div>
+              <div class="row"><span class="label">세대수</span><span class="value">총 128세대</span></div>
+            </div>
+          </div>
+
+          <!-- 스크롤 유도 화살표 영역 -->
+          <div class="card-bottom">
+            <span class="arrow-char ani-ud">》</span>
+          </div>
+        </div>   
+      </aside>
+
+      <!-- 우측 콘텐츠 -->
+      <main class="right">
+        <!-- 히어로 -->
+        <section class="panel hero" 0>
+          <div class="pad">
+            <img src="img/hero.png" alt="메인 이미지" class="w580">
+          </div>
+        </section>
+
+        <section class="panel hero" 0>
+          <div class="pad">
+            <img src="img/event.png" alt="혜택" class="w580">
+          </div>
+        </section>
+
+        <!-- ▼▼ 방문예약 섹션: 폼을 새 폼으로 교체 ▼▼ -->
+        <section id="section-form" class="panel" 0>
+          <div class="pad">
+            <h2 class="title">방문예약</h2>
+            <p class="subtitle">월드 메르디앙</p>
+
+              <div class="backimg">
+              <form id="reservation" class="visit-form" novalidate>
+                <div class="form-group">
+                  <label>방문예약 <span class="required">*</span></label>
+                  <p class="sub-info">날짜와 시간을 입력해 주세요.</p>
+                  <div class="input-row">
+                    <input name="visitdate" id="visit-date" type="text" placeholder="방문일 선택" inputmode="none" autocomplete="off">
+                  
+                    <!-- 시간(표시는 range, 실제값은 시작 HH:mm) -->
+                    <div class="time-wrap">
+                      <input id="visit-time-display" type="text" class="time-display" placeholder="방문시간 선택" readonly aria-haspopup="listbox" aria-expanded="false">
+                      <input name="visittime" id="visit-time" type="hidden" value=""> <!-- 서버로 전송될 값(HH:mm) -->
+                    
+                      <div id="time-dropdown" class="time-dropdown" role="listbox" aria-label="방문시간 선택">
+                        <div class="slot-sec">
+                          <h4>-방문시간선택-</h4>
+                          <div class="slot" role="option" tabindex="0" data-value="09:00">10시 이전</div>
+                          <div class="slot" role="option" tabindex="0" data-value="10:00">10:00 ~ 11:00</div>
+                          <div class="slot" role="option" tabindex="0" data-value="11:00">11:00 ~ 12:00</div>
+                          <div class="slot" role="option" tabindex="0" data-value="12:00">12:00 ~ 13:00</div>
+                          <div class="slot" role="option" tabindex="0" data-value="13:00">13:00 ~ 14:00</div>
+                          <div class="slot" role="option" tabindex="0" data-value="14:00">14:00 ~ 15:00</div>
+                          <div class="slot" role="option" tabindex="0" data-value="15:00">15:00 ~ 16:00</div>
+                          <div class="slot" role="option" tabindex="0" data-value="16:00">16:00 ~ 17:00</div>
+                          <div class="slot" role="option" tabindex="0" data-value="17:00">17:00 ~ 18:00</div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- // 시간 -->
+                  </div>
+                </div>
+              
+                <div class="form-group">
+                  <label>성함 <span class="required">*</span></label>
+                  <input name="name" type="text" placeholder="이름을 입력하세요" required autocomplete="name">
+                </div>
+              
+                <div class="form-group">
+                  <label>연락처 <span class="required">*</span></label>
+                  <p class="sub-info">문자로 입장권이 전송됩니다.</p>
+                  <div class="input-row">
+                    <input name="phone" type="tel" placeholder="연락처를 입력하세요" title="phone" required inputmode="numeric" autocomplete="tel">
+                  </div>
+                </div>
+              
+                <div class="form-group">
+                  <label>개인정보 수집 및 이용 동의 <span class="required">*</span></label>
+                  <details class="privacy-accordion">
+                    <summary>개인정보 수집·이용 동의서 [보기]</summary>
+                    <div class="privacy-content">
+          - 개인정보 수집ㆍ이용에 대한 안내 -
+                    
+                    
+          제 1 조 개인정보의 수집 및 이용 목적
+                    
+          회사가 수집한 개인정보는 다음의 목적을 위해 활용합니다.
+                    
+          1. 서비스 제공에 관한 계약 이행 및 서비스 제공에 따른 요금정산
+           콘텐츠 제공, 물품배송 또는 청구서 등 발송, 본인 인증 및 구매, 요금 결재, 요금추심
+          2. 회원 관리
+           회원제 서비스 이용에 따른 본인 확인, 개인식별, 가입 의사 확인, 가입 및 가입횟수 제한,
+           본 개정 이전에 가입한 14세 미만자의 법정 대리인 본인확인, 추후 법정 대리인 본인확인, 분쟁 조정을 위한 기록보존, 불만처리 등 민원처리, 고지사항 전달
+          3. 마케팅 및 광고에 활용
+           신규 서비스(제품) 개발 및 특화, 인구통계학적 특성에 따른 서비스 제공 및 광고게재, 접속 빈도 파악, 회원의 서비스 이용에 대한 통계,
+           이벤트 등 광고성 정보 전달 (회원의 개인정보는 광고를 의뢰한 개인이나 단체에 제공되지 않습니다.)
+                    
+                    
+          제 2 조 수집하는 개인정보 항목 및 수집방법
+                    
+          [수집하는 개인정보 항목]
+          1. 최초 회원가입 시 회원식별 및 최적화 된 서비스 제공을 위해 아래와 같은 정보를 수집합니다.
+          - 필수항목 : 이름/기업명,  이메일주소, 휴대전화번호, 가입인증정보
+          2. 개인정보 수정 시 서비스 이용 편의를 위해 회원이 자발적으로 아래와 같은 정보를 제공할 수 있습니다.
+          - 주소, 전화번호(서비스 운영상의 필수 정보 확보)
+          3. 서비스 이용 과정이나 이벤트 응모 과정, 기타 사업 처리과정에서 아래와 같은 정보가 생성되어 수집될 수 있습니다.
+          - 성명, 실명인증값, 아이핀번호(아이핀 인증시), 성별, 생년월일, 직업, 회사명, 주소, 전화번호, 서비스 이용 기록,
+            접속로그, 쿠키, 접속IP 정보, 결제기록, 불량 이용 기록, 이용자 상태정보, 방문일시
+                    
+          [수집방법]
+          회사는 다음과 같은 방법으로 개인정보를 수집합니다.
+          1. 홈페이지를 통한 회원가입, 게시판, 이벤트 응모
+          2. 서비스 사용 중 이용자의 자발적 제공을 통한 수집
+                    
+                    
+          제 3 조 개인정보의 보유 및 이용기간
+                    
+           원칙적으로 개인정보 수집 및 이용 목적이 달성된 후에는 해당 정보를 지체없이 파기합니다.
+          단, 다음의 정보에 대해서는 아래의 이유로 명시한 기간동안 보존합니다.
+          1. 회원탈퇴 시 보존 개인정보
+          - 보존항목: 회원이 제공한 이름, 사업자등록번호, 아이디, 이메일주소, 휴대전화번호 등
+          - 보존근거: 불량 이용자의 재가입 방지, 명예훼손 등 권리침해 분쟁 및 수사협조
+          - 보존기간: 회원탈퇴 후 1년
+          2. 상법, 전자상거래등에서의 소비자보호에 관한 법률 등 관계법령의 규정에 의하여 보존할 필요가 있는 경우
+          회사는 관계법령에서 정한 일정한 기간 동안 회원정보를 보관합니다.
+          이 경우 회사는 보관하는 정보를 그 보관의 목적으로만 이용하며 보존기간은 아래와 같습니다.
+                    
+          - 계약 또는 청약철회 등에 관한 기록
+           ㆍ보존 이유 : 전자상거래 등에서의 소비보호에 관한 법률
+           ㆍ보존 기간 : 3년
+                    
+          - 대금결제 및 재화 등의 공급에 관한 기록
+           ㆍ보존 이유 : 전자상거래 등에서의 소비자보호에 관한 법률
+           ㆍ보존 기간 : 3년
+                    
+          - 소비자의 불만 또는 분쟁처리에 관한 기록
+           ㆍ보존 이유 : 전자상거래 등에서의 소비자보호에 관한 법률
+           ㆍ보존 기간 : 3년
+                    
+          - 방문에 관한 기록(서비스 이용기록, 접속로그, 접속 IP 정보)
+          ㆍ보존 이유 : 통신비밀보호법
+           ㆍ보존 기간 : 3년
+                    </div>
+                  </details>
+                  <label class="checkbox-inline">
+                    <input type="checkbox" class="form-contents-privacy-checkbox" name="personalPXBO0" value="personal">
+                    <span>개인정보 수집 및 이용에 동의합니다.</span>
+                  </label>
+                </div>
+              
+                <button id="submitBtn" type="submit" disabled>확인</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- 섹션: 사업개요 -->
+        <section class="panel" 0>
+          <div class="pad">
+            <h2 class="title">사업개요</h2>
+            <div class="overview">
+              <img src="img/overview.jpg" alt="사업개요" class="w580">
+            </div>
+          </div>
+        </section>
+
+        <!-- 섹션: 입지환경 -->
+        <section class="panel" 0>
+          <div class="pad">
+            <h2 class="title">입지환경</h2>
+            <img src="img/location.png" alt="입지환경" class="w580">
+          </div>
+        </section>
+
+        <!-- 섹션: 프리미엄 -->
+        <section class="panel" 0>
+          <div class="pad">
+            <!-- <h2 class="title">프리미엄</h2> -->
+            <div class="premium">
+              <img src="img/img6.gif" alt="프리미엄" class="w580">
+            </div>
+          </div>
+        </section>
+
+        <!-- 섹션: 단지안내 (탭) -->
+        <section class="panel" 0>
+          <div class="pad">
+            <h2 class="title">단지안내</h2>
+            <div class="tabs" data-tabs="complex">
+              <div class="tab-buttons">
+                <button data-tab="1" class="active">단지 배치도</button>
+                <button data-tab="2">특화설비</button>
+                <button data-tab="3">특화 아이템</button>
+              </div>
+              <div class="tab-contents">
+                <div data-pane="1" class="pane active"><img src="img/complex_1.jpg" class="w580" alt=""></div>
+                <div data-pane="2" class="pane"><img src="img/complex_2.jpg" class="w580" alt=""></div>
+                <div data-pane="3" class="pane">
+                  <img src="img/community1.jpg" class="w580" alt="">
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" 0>
+          <div class="pad">
+            <h2 class="title">인테리어</h2>
+            <img src="img/interior.png" alt="인테리어" class="w580">
+          </div>
+        </section>
+
+        <!-- 섹션: 세대안내 (탭) -->
+        <section class="panel" 0>
+          <div class="pad">
+            <h2 class="title">세대안내</h2>
+            <div class="tabs" data-tabs="house">
+              <div class="tab-buttons">
+                <button data-tab="1" class="active">78</button>
+                <button data-tab="2">83</button>
+                <button data-tab="3">84</button>
+              </div>
+              <div class="tab-contents">
+                <div data-pane="1" class="pane active">
+                  <img src="img/house_1.jpg" class="w580" alt="">
+                </div>
+                <div data-pane="2" class="pane">
+                  <img src="img/house_2.jpg" class="w580" alt="">
+                </div>
+                <div data-pane="3" class="pane">
+                  <img src="img/house_3.jpg" class="w580" alt="">
+                </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- 모바일 전용 하단 고정 바(페이드 인) -->
+  <div class="mobile-cta fade-in">
+    <a href="#section-form" class="btn reserve">방문예약</a>
+    <a href="tel:010-4359-7772" class="btn call">전화</a>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
